@@ -28,6 +28,7 @@
 
       this.chart = echarts.init(this.element[0], 'vintage');
       this.chart.setOption({
+        backgroundColor: '#0F1217',
         legend: {
           icon: 'circle',
           inactiveColor: '#4D97ED',
@@ -39,6 +40,9 @@
           text: this.title,
           x: 10,
           y: 10,
+          textStyle: {
+            color: '#4D97ED',
+          },
         },
         tooltip: {
           trigger: 'axis',
@@ -78,7 +82,7 @@
             color: '#4D97ED',
             fontSize: 13,
           },
-          backgroundColor: 'rgba(21,35,28, 0.93)',
+          backgroundColor: 'rgba(16,18,23 0.93)',
           borderWidth: 0,
           extraCssText: 'z-index:1;',
         },
@@ -89,7 +93,7 @@
           },
           axisLine: {
             lineStyle: {
-              color: '#5b6f66',
+              color: '#fff',
             },
           },
           data: this.dates,
@@ -102,7 +106,7 @@
           },
           axisLine: {
             lineStyle: {
-              color: '#5b6f66',
+              color: '#fff',
             },
           },
         },
