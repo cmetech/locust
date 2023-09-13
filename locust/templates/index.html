@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Locust for {{ locustfile }}</title>
+    <title>Ericsson - OSCAR Synthetics Tool</title>
     <link rel="stylesheet" type="text/css" href="./static/css/application.css?v={{ version }}" media="screen">
     <link rel="shortcut icon" href="./static/img/favicon.png" type="image/x-icon"/>
     {% block extended_head %}
@@ -57,7 +57,7 @@
                 <a href="#" class="close_link">Close</a>
             </div>
             <div class="padder">
-                <h2>Start new load test</h2>
+                <h2>Start new canary run</h2>
                 <form action="./swarm" method="POST" id="swarm_form">
                     {% if show_userclass_picker %}
                         <label for="available_user_classes">UserClasses </label>
@@ -74,22 +74,22 @@
                         </select><br>
                     {% endif %}
                     {% if is_shape %}
-                        <label for="user_count">Number of users <span style="color:#8a8a8a;">(peak concurrency)</span></label>
+                        <label for="user_count">Number of users <span style="color:#F9DB56;">(peak concurrency)</span></label>
                         <input type="text" name="user_count" id="user_count" class="val_disabled" value="-" disabled="disabled" title="Disabled for tests using LoadTestShape class"/><br>
                         <input type="hidden" name="user_count" id="user_count" value="0"/><br>
-                        <label for="spawn_rate">Spawn rate <span style="color:#8a8a8a;">(users started/second)</span></label>
+                        <label for="spawn_rate">Spawn rate <span style="color:#F9DB56;">(users started/second)</span></label>
                         <input type="text" name="spawn_rate" id="spawn_rate" class="val_disabled" value="-" disabled="disabled" title="Disabled for tests using LoadTestShape class"/><br>
                         <input type="hidden" name="spawn_rate" id="spawn_rate" value="0"/><br>
                     {% else %}
-                        <label for="user_count">Number of users <span style="color:#8a8a8a;">(peak concurrency)</span></label>
+                        <label for="user_count">Number of users <span style="color:#F9DB56;">(peak concurrency)</span></label>
                         <input type="text" name="user_count" id="user_count" class="val" value="{{ num_users or "1" }}" onfocus="this.select()"/><br>
-                        <label for="spawn_rate">Spawn rate <span style="color:#8a8a8a;">(users started/second)</span></label>
+                        <label for="spawn_rate">Spawn rate <span style="color:#F9DB56;">(users started/second)</span></label>
                         <input type="text" name="spawn_rate" id="spawn_rate" class="val" value="{{ spawn_rate or "1" }}" onfocus="this.select()"/><br>
                     {% endif %}
                     <label for="host">
-                        Host <span style="color:#8a8a8a;">(e.g. http://www.example.com)</span>
+                        Host <span style="color:#F9DB56;">(e.g. http://www.example.com)</span>
                         {% if override_host_warning %}
-                            <span style="color:#8a8a8a; font-size:12px;">(setting this will override the host on all User classes)</span>
+                            <span style="color:#F9DB56; font-size:12px;">(setting this will override the host on all User classes)</span>
                         {% endif %}
                     </label>
                     <input type="text" name="host" id="host" class="val" autocapitalize="off" autocorrect="off" value="{{ host  or "" }}" onfocus="this.select()"/><br>
@@ -97,7 +97,7 @@
                     <div class="advancedOptions" style="display:none">
                         <label for="run_time">
                             Run time
-                            <span style="color:#8a8a8a;">(e.g. 20, 20s, 3m, 2h, 1h20m, 3h30m10s, etc.)</span>
+                            <span style="color:#F9DB56;">(e.g. 20, 20s, 3m, 2h, 1h20m, 3h30m10s, etc.)</span>
                         </label>
                         <input type="text" name="run_time" id="run_time" class="val" value="{{ run_time  or "" }}" onfocus="this.select()"/><br>
                     </div>
@@ -107,7 +107,7 @@
                             <label for="{{key}}">
                                 {{key.replace('_', ' ').capitalize()}}
                                 {% if value.help_text %}
-                                    <span style="color:#8a8a8a;">({{value.help_text}})</span>
+                                    <span style="color:#F9DB56;">({{value.help_text}})</span>
                                 {% endif %}
                             </label>
                             {% if value.choices %}
@@ -131,7 +131,7 @@
                             {{key}}<br>
                         {% endif %}
                     {% endfor %}
-                    <button type="submit">Start swarming</button>
+                    <button type="submit">Start Scenario</button>
                 </form>
                 <div style="clear:right;margin-bottom: 60px;"></div>
             </div>
@@ -142,23 +142,23 @@
                 <a href="#" class="close_link">Close</a>
             </div>
             <div class="padder">
-                <h2>Edit running load test</h2>
+                <h2>Edit canary run profile</h2>
                 <form action="./swarm" method="POST" id="edit_form">
                     {% if is_shape %}
-                        <label for="new_user_count">Number of users (peak concurrency)</label>
+                        <label for="new_user_count">Number of users <span style="color:#F9DB56;">(peak concurrency)</span></label>
                         <input type="text" name="user_count" id="new_user_count" class="val_disabled"  value="-" disabled="disabled" title="Disabled for tests using LoadTestShape class"/><br>
-                        <label for="spawn_rate">Spawn rate <span style="color:#8a8a8a;">(users added/stopped per second)</span></label>
+                        <label for="spawn_rate">Spawn rate <span style="color:#F9DB56;">(users added/stopped per second)</span></label>
                         <input type="text" name="spawn_rate" id="new_spawn_rate" class="val_disabled"  value="-" disabled="disabled" title="Disabled for tests using LoadTestShape class"/><br>
                     {% else %}
-                        <label for="new_user_count">Number of users (peak concurrency)</label>
+                        <label for="new_user_count">Number of users <span style="color:#F9DB56;">(peak concurrency)</span></label>
                         <input type="text" name="user_count" id="new_user_count" class="val"  value="{{ num_users or "1" }}" onfocus="this.select()"/><br>
-                        <label for="spawn_rate">Spawn rate <span style="color:#8a8a8a;">(users added/stopped per second)</span></label>
+                        <label for="spawn_rate">Spawn rate <span style="color:#F9DB56;">(users added/stopped per second)</span></label>
                         <input type="text" name="spawn_rate" id="new_spawn_rate" class="val"  value="{{ spawn_rate or "1" }}" onfocus="this.select()"/><br>
                     {% endif %}
                     {% if is_shape %}
-                        <button type="submit" disabled>Start swarming</button>
+                        <button type="submit" disabled>Start Scenario</button>
                     {% else %}
-                        <button type="submit">Start swarming</button>
+                        <button type="submit">Start Scenario</button>
                     {% endif %}
                 </form>
                 <div style="clear:right;"></div>
