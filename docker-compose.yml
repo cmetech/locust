@@ -1,0 +1,33 @@
+version: '3.8'
+name: 'locust'
+
+services:
+  locust_master:
+    image: ${LOCUST_IMAGE}:${LOCUST_VERSION}
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - ${LOCUST_MASTER_PORT:-8089}:${LOCUST_MASTER_PORT:-8089}
+    container_name: ${LOCUST_MASTER_SERVICENAME:-locust-master}
+    volumes:
+      - ./locustfile.py:/mnt/locust/locustfile.py
+    command: -f /mnt/locust/locustfile.py --master -H http://${LOCUST_MASTER_SERVICENAME}:${LOCUST_MASTER_PORT:-8089}
+    networks: &default_network
+      - locust_network
+
+  locust_worker:
+    image: ${LOCUST_IMAGE}:${LOCUST_VERSION}
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: ${LOCUST_WORKER_SERVICENAME:-locust-worker}
+    volumes:
+      - ./locustfile.py:/mnt/locust/locustfile.py
+    command: -f /mnt/locust/locustfile.py --worker --master-host ${LOCUST_MASTER_SERVICENAME}
+    networks: *default_network
+
+networks:
+  locust_network:
+    name: locust_network
+    driver: bridge
