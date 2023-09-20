@@ -1,13 +1,14 @@
 FROM python:3.11-slim as base
 
 FROM base as builder
-RUN apt-get update && apt-get install -y git 
+RUN apt-get update && apt-get install -y git
 # there are no wheels for some packages (geventhttpclient?) for arm64/aarch64, so we need some build dependencies there
 RUN if [ -n "$(arch | grep 'arm64\|aarch64')" ]; then apt install -y --no-install-recommends gcc python3-dev; fi
 RUN python -m venv /opt/venv
 ENV PATH="/opt/venv/bin:$PATH"
 COPY . /build
 RUN pip install /build/
+RUN pip install redis prometheus-client
 
 FROM base
 COPY --from=builder /opt/venv /opt/venv
