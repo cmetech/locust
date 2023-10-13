@@ -26,6 +26,18 @@ if [ -z "$IMAGE_TAG" ] || [ -z "$VERSION" ]; then
     print_usage
 fi
 
+# Check and switch to the desired branch
+desired_branch="oscar-locust"
+current_branch=$(git rev-parse --abbrev-ref HEAD)
+
+if [ "$current_branch" != "$desired_branch" ]; then
+    echo "Switching to branch $desired_branch..."
+    git checkout "$desired_branch"
+
+    # Optional: Pull the latest changes from the desired branch
+    # git pull origin "$desired_branch"
+fi
+
 # Create a new Buildx instance
 BUILDER_NAME="oscar_buildx"
 docker buildx create --name "$BUILDER_NAME" --use
