@@ -8,7 +8,7 @@ RUN python -m venv /opt/venv
 ENV PATH="/opt/venv/bin:$PATH"
 COPY . /build
 RUN pip install /build/
-RUN pip install redis prometheus-client
+RUN pip install --no-cache-dir --upgrade -r /build/requirements.txt
 
 FROM base
 COPY --from=builder /opt/venv /opt/venv
