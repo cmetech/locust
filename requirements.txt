@@ -1,5 +1,4 @@
 oracledb
 mysql-connector-python
 mysqlclient
-redis
 prometheus-client
