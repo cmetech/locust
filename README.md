@@ -2,12 +2,16 @@
 
 [![PyPI](https://img.shields.io/pypi/v/locust.svg)](https://pypi.org/project/locust/)
 [![PyPI](https://img.shields.io/pypi/pyversions/locust.svg)](https://pypi.org/project/locust/)
+[![Downloads](https://pepy.tech/badge/locust/week)](https://pepy.tech/project/locust)
 [![Build Status](https://github.com/locustio/locust/workflows/Tests/badge.svg)](https://github.com/locustio/locust/actions?query=workflow%3ATests)
-[![license](https://img.shields.io/github/license/locustio/locust.svg)](https://github.com/locustio/locust/blob/master/LICENSE)
 [![GitHub contributors](https://img.shields.io/github/contributors/locustio/locust.svg)](https://github.com/locustio/locust/graphs/contributors)
 [![Support Ukraine Badge](https://bit.ly/support-ukraine-now)](https://github.com/support-ukraine/support-ukraine)
 
-Locust is an easy to use, scriptable and scalable performance testing tool. You define the behaviour of your users in regular Python code, instead of being constrained by a UI or domain specific language that only pretends to be real code. This makes Locust infinitely expandable and very developer friendly.
+Locust is an open source performance/load testing tool for HTTP and other protocols. Its developer friendly approach lets you to define your tests in regular Python code.
+
+Locust tests can be run from command line or using its web-based UI. Throughput, response times and errors can be viewed in real time and/or exported for later analysis.
+
+You can import regular Python libraries into your tests, and with Locust's pluggable architecture it is infinitely expandable. Unlike when using most other tools, your test design will never be limited by a GUI or domain-specific language.
 
 To get started right away, head over to the [documentation](http://docs.locust.io/en/stable/installation.html).
 
@@ -62,19 +66,16 @@ Locust's code base is intentionally kept small and doesn't solve everything out 
 
 ## Links
 
-* Website: [locust.io](https://locust.io)
 * Documentation: [docs.locust.io](https://docs.locust.io)
 * Support/Questions: [StackOverflow](https://stackoverflow.com/questions/tagged/locust)
-* Code/issues: [GitHub](https://github.com/locustio/locust)
 * Chat/discussion: [Slack](https://locustio.slack.com) [(signup)](https://communityinviter.com/apps/locustio/locust)
 
 ## Authors
 
-* [Carl Byström](http://cgbystrom.com) ([@cgbystrom](https://twitter.com/cgbystrom) on Twitter)
-* [Jonatan Heyman](http://heyman.info) ([@jonatanheyman](https://twitter.com/jonatanheyman) on Twitter)
-* [Joakim Hamrén](https://github.com/Jahaja) ([@Jahaaja](https://twitter.com/Jahaaja) on Twitter)
-* [Hugo Heyman](https://github.com/HeyHugo) ([@hugoheyman](https://twitter.com/hugoheyman) on Twitter)
-* [Lars Holmberg](https://github.com/cyberw)
+* Maintainer: [Lars Holmberg](https://github.com/cyberw)
+* Modern UI: [Andrew Baldwin](https://github.com/andrewbaldwin44)
+* Original creator: [Jonatan Heyman](https://github.com/heyman)
+* Massive thanks to [all of our contributors](https://github.com/locustio/locust/graphs/contributors)
 
 ## License
 

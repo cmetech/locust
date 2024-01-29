@@ -4,6 +4,70 @@ Changelog Highlights
 
 For full details of the Locust changelog, please see https://github.com/locustio/locust/blob/master/CHANGELOG.md
 
+2.21.0
+======
+* Switch from flake8 + black to ruff for linting and formatting of code
+* Update shape class' runner when Web UI picker is used by https://github.com/locustio/locust/pull/2534
+* Web UI Modern Auth https://github.com/locustio/locust/pull/2538
+* Customization Feature for Percentile Display on Statistics Page https://github.com/locustio/locust/pull/2550
+* Allow User weight adjustment (and task selection) in UI when running with --class-picker, or on command line with --config-users argument https://github.com/locustio/locust/pull/2559
+* Optimize memory usage when using --processes by @cyberw in https://github.com/locustio/locust/pull/2564
+
+2.20.1
+======
+* run_single_user improvements https://github.com/locustio/locust/pull/2519
+* Support IPv6 for zmq connection between master and worker https://github.com/locustio/locust/pull/2521
+* Modern UI: Update Vite to 4.5.1 https://github.com/locustio/locust/pull/2530
+* Other tiny fixes
+
+2.20.0
+======
+* Add event.measure context manager for simpler firing of request event (experimental) https://github.com/locustio/locust/pull/2511
+* Various improvements to modern UI https://github.com/locustio/locust/pull/2491
+* Various tiny fixes
+
+2.19.1
+======
+* Create any directories as part of the CSV Prefix https://github.com/locustio/locust/pull/2481
+* Dont suppress StopUser or GreenletExit in on_stop https://github.com/locustio/locust/pull/2486
+* FastHttpUser: Detect response text encoding when no information is present in headers https://github.com/locustio/locust/pull/2485
+
+2.19.0
+======
+* Add --processes parameter to automatically fork subprocesses for workers https://github.com/locustio/locust/pull/2472
+* Automatically shut down workers if master goes missing for too long https://github.com/locustio/locust/pull/2474
+* Update minimum version of various dependencies https://github.com/locustio/locust/pull/2476
+
+2.18.4
+======
+* Various fixes to Modern UI
+* Ensure to wait a second before next call to LoadTestShape's tick() https://github.com/locustio/locust/pull/2465
+
+2.18.3
+======
+* Modern UI: Add sorting to columns on statistics page and downloaded report https://github.com/locustio/locust/pull/2453
+
+2.18.2
+======
+* FastHttpUser: encoding return str when response is empty https://github.com/locustio/locust/pull/2451
+
+2.18.1
+======
+* Add Log Viewer to Modern UI https://github.com/locustio/locust/pull/2440
+
+2.18.0
+======
+* Add a modern web UI based on React, MaterialUI and Vite (activated using --modern-ui) https://github.com/locustio/locust/pull/2405
+* Stop supporting Python 3.7 https://github.com/locustio/locust/pull/2421
+* Fix too long first wait time for constant_pacing (and constant_throughput) https://github.com/locustio/locust/pull/2428
+
+2.17.0
+======
+* Support user abstract load shape base classes https://github.com/locustio/locust/pull/2393
+* Allow LoadShapes to reuse run-time, spawn-rate and users parameters https://github.com/locustio/locust/pull/2395
+* Improve performance for statistics handling https://github.com/locustio/locust/pull/2410
+* Test and explicitly support Python 3.12 https://github.com/locustio/locust/pull/2411
+
 2.16.1
 ======
 * Deprecate LOCUST_PLAYWRIGHT env var https://github.com/locustio/locust/pull/2378

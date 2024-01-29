@@ -1,33 +1,40 @@
+from __future__ import annotations
+
+import locust
+
+import atexit
+import errno
+import gc
+import inspect
+import json
 import logging
 import os
 import signal
 import sys
 import time
-import atexit
-import inspect
+import traceback
+
 import gevent
-import locust
-from typing import Dict
-from . import log
+
+from . import log, stats
 from .argument_parser import parse_locustfile_option, parse_options
 from .env import Environment
-from .log import setup_logging, greenlet_exception_logger
-from . import stats
+from .html import get_html_report
+from .input_events import input_listener
+from .log import greenlet_exception_logger, setup_logging
 from .stats import (
+    StatsCSV,
+    StatsCSVFileWriter,
     print_error_report,
     print_percentile_stats,
     print_stats,
     print_stats_json,
-    stats_printer,
     stats_history,
+    stats_printer,
 )
-from .stats import StatsCSV, StatsCSVFileWriter
 from .user.inspectuser import print_task_ratio, print_task_ratio_json
-from .util.timespan import parse_timespan
-from .exception import AuthCredentialsError
-from .input_events import input_listener
-from .html import get_html_report
 from .util.load_locustfile import load_locustfile
+from .util.timespan import parse_timespan
 
 try:
     # import locust_plugins if it is installed, to allow it to register custom arguments etc
@@ -36,6 +43,14 @@ except ModuleNotFoundError:
     pass
 
 version = locust.__version__
+
+# Options to ignore when using a custom shape class without `use_common_options=True`
+# See: https://docs.locust.io/en/stable/custom-load-shape.html#use-common-options
+COMMON_OPTIONS = {
+    "num_users": "users",
+    "spawn_rate": "spawn-rate",
+    "run_time": "run-time",
+}
 
 
 def create_environment(
@@ -46,6 +61,7 @@ def create_environment(
     locustfile=None,
     available_user_classes=None,
     available_shape_classes=None,
+    available_user_tasks=None,
 ):
     """
     Create an Environment instance from options
@@ -60,6 +76,7 @@ def create_environment(
         parsed_options=options,
         available_user_classes=available_user_classes,
         available_shape_classes=available_shape_classes,
+        available_user_tasks=available_user_tasks,
     )
 
 
@@ -74,20 +91,24 @@ def main():
     locustfile = locustfiles[0] if locustfiles_length == 1 else None
 
     # Importing Locustfile(s) - setting available UserClasses and ShapeClasses to choose from in UI
-    user_classes: Dict[str, locust.User] = {}
+    user_classes: dict[str, locust.User] = {}
     available_user_classes = {}
     available_shape_classes = {}
+    available_user_tasks = {}
+    shape_class = None
     for _locustfile in locustfiles:
-        docstring, _user_classes, shape_class = load_locustfile(_locustfile)
+        docstring, _user_classes, shape_classes = load_locustfile(_locustfile)
 
         # Setting Available Shape Classes
-        if shape_class:
-            shape_class_name = type(shape_class).__name__
-            if shape_class_name in available_shape_classes.keys():
-                sys.stderr.write(f"Duplicate shape classes: {shape_class_name}\n")
-                sys.exit(1)
+        if shape_classes:
+            shape_class = shape_classes[0]
+            for shape_class in shape_classes:
+                shape_class_name = type(shape_class).__name__
+                if shape_class_name in available_shape_classes.keys():
+                    sys.stderr.write(f"Duplicate shape classes: {shape_class_name}\n")
+                    sys.exit(1)
 
-            available_shape_classes[shape_class_name] = shape_class
+                available_shape_classes[shape_class_name] = shape_class
 
         # Setting Available User Classes
         for key, value in _user_classes.items():
@@ -105,6 +126,7 @@ def main():
 
             user_classes[key] = value
             available_user_classes[key] = value
+            available_user_tasks[key] = value.tasks or None
 
     if len(stats.PERCENTILES_TO_CHART) != 2:
         logging.error("stats.PERCENTILES_TO_CHART parameter should be 2 parameters \n")
@@ -124,6 +146,14 @@ def main():
                 "stats.PERCENTILES_TO_CHART parameter need to be float and value between. 0 < percentile < 1 Eg 0.95\n"
             )
             sys.exit(1)
+
+    for percentile in stats.PERCENTILES_TO_STATISTICS:
+        if not is_valid_percentile(percentile):
+            logging.error(
+                "stats.PERCENTILES_TO_STATISTICS parameter need to be float and value between. 0 < percentile < 1 Eg 0.95\n"
+            )
+            sys.exit(1)
+
     # parse all command line options
     options = parse_options()
 
@@ -132,6 +162,12 @@ def main():
 
     if options.slave or options.expect_slaves:
         sys.stderr.write("The --slave/--expect-slaves parameters have been renamed --worker/--expect-workers\n")
+        sys.exit(1)
+
+    if options.web_auth:
+        sys.stderr.write(
+            "The --web-auth parameters has been replaced with --web-login. See https://docs.locust.io/en/stable/extending-locust.html#authentication for details\n"
+        )
         sys.exit(1)
 
     if options.autoquit != -1 and not options.autostart:
@@ -149,6 +185,118 @@ def main():
         else:
             sys.stderr.write("Invalid --loglevel. Valid values are: DEBUG/INFO/WARNING/ERROR/CRITICAL\n")
             sys.exit(1)
+
+    children = []
+
+    if options.processes:
+        if os.name == "nt":
+            sys.stderr.write("--processes is not supported in Windows (except in WSL)\n")
+            sys.exit(1)
+        if options.processes == -1:
+            options.processes = os.cpu_count()
+            if not options.processes:
+                sys.stderr.write("--processes failed to detect number of cpus!?\n")
+                sys.exit(1)
+        elif options.processes < -1:
+            sys.stderr.write(f"Invalid --processes count {options.processes}\n")
+            sys.exit(1)
+        elif options.master:
+            sys.stderr.write(
+                "--master cannot be combined with --processes. Remove --master, as it is implicit as long as --worker is not set.\n"
+            )
+            sys.exit(1)
+        # Optimize copy-on-write-behavior to save some memory (aprx 26MB -> 15MB rss) in child processes
+        gc.collect()  # avoid freezing garbage
+        gc.freeze()  # move all objects to perm gen so ref counts dont get updated
+        for _ in range(options.processes):
+            child_pid = gevent.fork()
+            if child_pid:
+                children.append(child_pid)
+                logging.debug(f"Started child worker with pid #{child_pid}")
+            else:
+                # child is always a worker, even when it wasnt set on command line
+                options.worker = True
+                # remove options that dont make sense on worker
+                options.run_time = None
+                options.autostart = None
+                break
+        else:
+            # we're in the parent process
+            if options.worker:
+                # ignore the first sigint in parent, and wait for the children to handle sigint
+                def sigint_handler(_signal, _frame):
+                    if getattr(sigint_handler, "has_run", False):
+                        # if parent gets repeated sigint, we kill the children hard
+                        for child_pid in children:
+                            try:
+                                logging.debug(f"Sending SIGKILL to child with pid {child_pid}")
+                                os.kill(child_pid, signal.SIGKILL)
+                            except ProcessLookupError:
+                                pass  # process already dead
+                            except Exception:
+                                logging.error(traceback.format_exc())
+                        sys.exit(1)
+                    sigint_handler.has_run = True
+
+                signal.signal(signal.SIGINT, sigint_handler)
+                exit_code = 0
+                # nothing more to do, just wait for the children to exit
+                for child_pid in children:
+                    _, child_status = os.waitpid(child_pid, 0)
+                    try:
+                        if sys.version_info >= (3, 9):
+                            child_exit_code = os.waitstatus_to_exitcode(child_status)
+                            exit_code = max(exit_code, child_exit_code)
+                    except AttributeError:
+                        pass  # dammit python 3.8...
+                sys.exit(exit_code)
+            else:
+                options.master = True
+                options.expect_workers = options.processes
+
+                def kill_workers(children):
+                    exit_code = 0
+                    start_time = time.time()
+                    # give children some time to finish up (in case they had an error parsing arguments etc)
+                    for child_pid in children[:]:
+                        while time.time() < start_time + 3:
+                            try:
+                                _, child_status = os.waitpid(child_pid, os.WNOHANG)
+                                children.remove(child_pid)
+                                try:
+                                    if sys.version_info >= (3, 9):
+                                        child_exit_code = os.waitstatus_to_exitcode(child_status)
+                                        exit_code = max(exit_code, child_exit_code)
+                                except AttributeError:
+                                    pass  # dammit python 3.8...
+                            except OSError as e:
+                                if e.errno == errno.EINTR:
+                                    time.sleep(0.1)
+                                else:
+                                    logging.error(traceback.format_exc())
+                            else:
+                                break
+                    for child_pid in children:
+                        try:
+                            logging.debug(f"Sending SIGINT to child with pid {child_pid}")
+                            os.kill(child_pid, signal.SIGINT)
+                        except ProcessLookupError:
+                            pass  # never mind, process was already dead
+                    for child_pid in children:
+                        _, child_status = os.waitpid(child_pid, 0)
+                        try:
+                            if sys.version_info >= (3, 9):
+                                child_exit_code = os.waitstatus_to_exitcode(child_status)
+                                exit_code = max(exit_code, child_exit_code)
+                        except AttributeError:
+                            pass  # dammit python 3.8...
+                    if exit_code > 1:
+                        logging.error(f"Bad response code from worker children: {exit_code}")
+                    # ensure master doesnt finish until output from workers has arrived
+                    # otherwise the terminal might look weird.
+                    time.sleep(0.1)
+
+                atexit.register(kill_workers, children)
 
     logger = logging.getLogger(__name__)
     greenlet_exception_handler = greenlet_exception_logger(logger)
@@ -201,6 +349,9 @@ It's not high enough for load testing, and the OS didn't allow locust to increas
 See https://github.com/locustio/locust/wiki/Installation#increasing-maximum-number-of-open-files-limit for more info."""
             )
 
+    if sys.version_info < (3, 9):
+        logger.info("Python 3.8 support is deprecated and will be removed soon")
+
     # create locust Environment
     locustfile_path = None if not locustfile else os.path.basename(locustfile)
 
@@ -212,12 +363,47 @@ See https://github.com/locustio/locust/wiki/Installation#increasing-maximum-numb
         locustfile=locustfile_path,
         available_user_classes=available_user_classes,
         available_shape_classes=available_shape_classes,
+        available_user_tasks=available_user_tasks,
     )
 
-    if shape_class and (options.num_users or options.spawn_rate):
+    if options.config_users:
+        for json_user_config in options.config_users:
+            try:
+                if json_user_config.endswith(".json"):
+                    with open(json_user_config) as file:
+                        user_config = json.load(file)
+                else:
+                    user_config = json.loads(json_user_config)
+
+                def ensure_user_class_name(config):
+                    if "user_class_name" not in config:
+                        logger.error("The user config must specify a user_class_name")
+                        sys.exit(-1)
+
+                if isinstance(user_config, list):
+                    for config in user_config:
+                        ensure_user_class_name(config)
+
+                        environment.update_user_class(config)
+                else:
+                    ensure_user_class_name(user_config)
+
+                    environment.update_user_class(user_config)
+            except Exception as e:
+                logger.error(f"The --config-users arugment must be in valid JSON string or file: {e}")
+                sys.exit(-1)
+
+    if (
+        shape_class
+        and not shape_class.use_common_options
+        and any(getattr(options, opt, None) for opt in COMMON_OPTIONS)
+    ):
         logger.warning(
-            "The specified locustfile contains a shape class but a conflicting argument was specified: users or spawn-rate. Ignoring arguments"
+            "--run-time, --users or --spawn-rate have no impact on LoadShapes unless the shape class explicitly reads them. "
+            "See: docs.locust.io/en/stable/custom-load-shape.html#use-common-options"
         )
+        ignored = [f"--{arg}" for opt, arg in COMMON_OPTIONS.items() if getattr(options, opt, None)]
+        logger.warning(f"The following option(s) will be ignored: {', '.join(ignored)}")
 
     if options.show_task_ratio:
         print("\n Task ratio per User class")
@@ -266,6 +452,10 @@ See https://github.com/locustio/locust/wiki/Installation#increasing-maximum-numb
             sys.exit(1)
 
     if options.csv_prefix:
+        base_csv_file = os.path.basename(options.csv_prefix)
+        base_csv_dir = options.csv_prefix[: -len(base_csv_file)]
+        if not os.path.exists(base_csv_dir) and len(base_csv_dir) != 0:
+            os.makedirs(base_csv_dir)
         stats_csv_writer = StatsCSVFileWriter(
             environment, stats.PERCENTILES_TO_REPORT, options.csv_prefix, options.stats_history_enabled
         )
@@ -276,32 +466,33 @@ See https://github.com/locustio/locust/wiki/Installation#increasing-maximum-numb
     if not options.headless and not options.worker:
         # spawn web greenlet
         protocol = "https" if options.tls_cert and options.tls_key else "http"
-        try:
-            if options.web_host == "*":
-                # special check for "*" so that we're consistent with --master-bind-host
-                web_host = ""
-            else:
-                web_host = options.web_host
-            if web_host:
-                logger.info(f"Starting web interface at {protocol}://{web_host}:{options.web_port}")
-            else:
+
+        if options.web_host == "*":
+            # special check for "*" so that we're consistent with --master-bind-host
+            web_host = ""
+        else:
+            web_host = options.web_host
+        if web_host:
+            logger.info(f"Starting web interface at {protocol}://{web_host}:{options.web_port}")
+        else:
+            if os.name == "nt":
                 logger.info(
-                    "Starting web interface at %s://0.0.0.0:%s (accepting connections from all network interfaces)"
-                    % (protocol, options.web_port)
+                    f"Starting web interface at {protocol}://localhost:{options.web_port} (accepting connections from all network interfaces)"
                 )
-            web_ui = environment.create_web_ui(
-                host=web_host,
-                port=options.web_port,
-                auth_credentials=options.web_auth,
-                tls_cert=options.tls_cert,
-                tls_key=options.tls_key,
-                stats_csv_writer=stats_csv_writer,
-                delayed_start=True,
-                userclass_picker_is_active=options.class_picker,
-            )
-        except AuthCredentialsError:
-            logger.error("Credentials supplied with --web-auth should have the format: username:password")
-            sys.exit(1)
+            else:
+                logger.info(f"Starting web interface at {protocol}://0.0.0.0:{options.web_port}")
+
+        web_ui = environment.create_web_ui(
+            host=web_host,
+            port=options.web_port,
+            web_login=options.web_login,
+            tls_cert=options.tls_cert,
+            tls_key=options.tls_key,
+            stats_csv_writer=stats_csv_writer,
+            delayed_start=True,
+            userclass_picker_is_active=options.class_picker,
+            modern_ui=options.modern_ui,
+        )
     else:
         web_ui = None
 
@@ -381,9 +572,6 @@ See https://github.com/locustio/locust/wiki/Installation#increasing-maximum-numb
 
             # start the test
             if environment.shape_class:
-                if options.run_time:
-                    sys.stderr.write("It makes no sense to combine --run-time and LoadShapes. Bailing out.\n")
-                    sys.exit(1)
                 try:
                     environment.runner.start_shape()
                     environment.runner.shape_greenlet.join()
@@ -469,7 +657,6 @@ See https://github.com/locustio/locust/wiki/Installation#increasing-maximum-numb
             print_stats(runner.stats, current=False)
             print_percentile_stats(runner.stats)
             print_error_report(runner.stats)
-
         environment.events.quit.fire(exit_code=code)
         sys.exit(code)
 
@@ -478,8 +665,8 @@ See https://github.com/locustio/locust/wiki/Installation#increasing-maximum-numb
         logger.info("Got SIGTERM signal")
         shutdown()
 
-    def save_html_report():
-        html_report = get_html_report(environment, show_download_link=False)
+    def save_html_report(use_modern_ui=False):
+        html_report = get_html_report(environment, show_download_link=False, use_modern_ui=use_modern_ui)
         logger.info("writing html report to file: %s", options.html_file)
         with open(options.html_file, "w", encoding="utf-8") as file:
             file.write(html_report)
@@ -495,10 +682,10 @@ See https://github.com/locustio/locust/wiki/Installation#increasing-maximum-numb
 
         main_greenlet.join()
         if options.html_file:
-            save_html_report()
+            save_html_report(options.modern_ui)
     except KeyboardInterrupt:
         if options.html_file:
-            save_html_report()
+            save_html_report(options.modern_ui)
     except Exception:
         raise
     shutdown()

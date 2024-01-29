@@ -1,11 +1,15 @@
 from __future__ import annotations
-from typing import Callable, Dict, List, Optional
+
+import logging
+import time
+import traceback
+from typing import Callable, final
 
 from gevent import GreenletExit, greenlet
 from gevent.pool import Group
-from typing_extensions import final
 from urllib3 import PoolManager
 
+logger = logging.getLogger(__name__)
 from locust.clients import HttpSession
 from locust.exception import LocustError, StopUser
 from locust.user.wait_time import constant
@@ -19,6 +23,8 @@ from .task import (
     TaskSet,
     get_tasks_from_base_classes,
 )
+
+logger = logging.getLogger(__name__)
 
 
 class UserMeta(type):
@@ -54,7 +60,7 @@ class User(metaclass=UserMeta):
     :py:class:`HttpUser <locust.HttpUser>` class.
     """
 
-    host: Optional[str] = None
+    host: str | None = None
     """Base hostname to swarm. i.e: http://127.0.0.1:1234"""
 
     min_wait = None
@@ -84,7 +90,7 @@ class User(metaclass=UserMeta):
     Method that returns the time between the execution of locust tasks in milliseconds
     """
 
-    tasks: List[TaskSet | Callable] = []
+    tasks: list[TaskSet | Callable] = []
     """
     Collection of python callables and/or TaskSet classes that the Locust user(s) will run.
 
@@ -120,6 +126,7 @@ class User(metaclass=UserMeta):
         self._greenlet: greenlet.Greenlet = None
         self._group: Group
         self._taskset_instance: TaskSet = None
+        self._cp_last_run = time.time()  # used by constant_pacing wait_time
 
     def on_start(self):
         """
@@ -139,7 +146,12 @@ class User(metaclass=UserMeta):
         self._taskset_instance = DefaultTaskSet(self)
         try:
             # run the TaskSet on_start method, if it has one
-            self.on_start()
+            try:
+                self.on_start()
+            except Exception as e:
+                # unhandled exceptions inside tasks are logged in TaskSet.run, but since we're not yet there...
+                logger.error("%s\n%s", e, traceback.format_exc())
+                raise
 
             self._taskset_instance.run()
         except (GreenletExit, StopUser):
@@ -194,6 +206,8 @@ class User(metaclass=UserMeta):
         elif self._state == LOCUST_STATE_RUNNING:
             self._state = LOCUST_STATE_STOPPING
             return False
+        else:
+            raise Exception(f"Tried to stop User in an unexpected state: {self._state}. This should never happen.")
 
     @property
     def group(self):
@@ -203,12 +217,21 @@ class User(metaclass=UserMeta):
     def greenlet(self):
         return self._greenlet
 
-    def context(self) -> Dict:
+    def context(self) -> dict:
         """
         Adds the returned value (a dict) to the context for :ref:`request event <request_context>`.
         Override this in your User class to customize the context.
         """
         return {}
+
+    @classmethod
+    def json(cls):
+        return {
+            "host": cls.host,
+            "weight": cls.weight,
+            "fixed_count": cls.fixed_count,
+            "tasks": [task.__name__ for task in cls.tasks],
+        }
 
     @classmethod
     def fullname(cls) -> str:
@@ -231,7 +254,7 @@ class HttpUser(User):
     abstract = True
     """If abstract is True, the class is meant to be subclassed, and users will not choose this locust during a test"""
 
-    pool_manager: Optional[PoolManager] = None
+    pool_manager: PoolManager | None = None
     """Connection pool manager to use. If not given, a new manager is created per single user."""
 
     def __init__(self, *args, **kwargs):

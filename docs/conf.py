@@ -7,10 +7,12 @@
 # All configuration values have a default value; values that are commented out
 # serve to show the default value.
 
+from locust.argument_parser import get_empty_argument_parser, setup_parser_arguments
+
 import os
 import subprocess
 
-from locust.argument_parser import get_empty_argument_parser, setup_parser_arguments
+import sphinx_rtd_theme
 
 
 # Run command `locust --help` and store output in cli-help-output.txt which is included in the docs
@@ -142,16 +144,8 @@ exclude_dirnames = []
 
 html_show_sourcelink = False
 html_file_suffix = ".html"
-
-
-# on_rtd is whether we are on readthedocs.org, this line of code grabbed from docs.readthedocs.org
-on_rtd = os.environ.get("READTHEDOCS") == "True"
-
-if not on_rtd:  # only import and set the theme if we're building docs locally
-    import sphinx_rtd_theme
-
-    html_theme = "sphinx_rtd_theme"
-    html_theme_path = [sphinx_rtd_theme.get_html_theme_path()]
+html_theme = "sphinx_rtd_theme"
+html_theme_path = [sphinx_rtd_theme.get_html_theme_path()]
 
 
 # Custom CSS overrides

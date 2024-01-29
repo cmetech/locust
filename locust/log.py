@@ -9,6 +9,15 @@ HOSTNAME = socket.gethostname()
 unhandled_greenlet_exception = False
 
 
+class LogReader(logging.Handler):
+    def __init__(self):
+        super().__init__()
+        self.logs = []
+
+    def emit(self, record):
+        self.logs.append(self.format(record))
+
+
 def setup_logging(loglevel, logfile=None):
     loglevel = loglevel.upper()
 
@@ -32,21 +41,22 @@ def setup_logging(loglevel, logfile=None):
                 "class": "logging.StreamHandler",
                 "formatter": "plain",
             },
+            "log_reader": {"class": "locust.log.LogReader", "formatter": "default"},
         },
         "loggers": {
             "locust": {
-                "handlers": ["console"],
+                "handlers": ["console", "log_reader"],
                 "level": loglevel,
                 "propagate": False,
             },
             "locust.stats_logger": {
-                "handlers": ["console_plain"],
+                "handlers": ["console_plain", "log_reader"],
                 "level": "INFO",
                 "propagate": False,
             },
         },
         "root": {
-            "handlers": ["console"],
+            "handlers": ["console", "log_reader"],
             "level": loglevel,
         },
     }
@@ -58,8 +68,8 @@ def setup_logging(loglevel, logfile=None):
             "filename": logfile,
             "formatter": "default",
         }
-        LOGGING_CONFIG["loggers"]["locust"]["handlers"] = ["file"]
-        LOGGING_CONFIG["root"]["handlers"] = ["file"]
+        LOGGING_CONFIG["loggers"]["locust"]["handlers"] = ["file", "log_reader"]
+        LOGGING_CONFIG["root"]["handlers"] = ["file", "log_reader"]
 
     logging.config.dictConfig(LOGGING_CONFIG)
 
@@ -73,9 +83,8 @@ def greenlet_exception_logger(logger, level=logging.CRITICAL):
     def exception_handler(greenlet):
         if greenlet.exc_info[0] == SystemExit:
             logger.log(
-                level,
-                "sys.exit(%s) called (exception callstack suppressed, use log level DEBUG for more info)"
-                % greenlet.exc_info[1],
+                min(logging.INFO, level),  # dont use higher than INFO for this, because it sounds way to urgent
+                "sys.exit(%s) called (use log level DEBUG for callstack)" % greenlet.exc_info[1],
             )
             logger.log(logging.DEBUG, "Unhandled exception in greenlet: %s", greenlet, exc_info=greenlet.exc_info)
         else:

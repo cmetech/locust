@@ -1,7 +1,250 @@
 # Detailed changelog
 The most important changes can also be found in [the documentation](https://docs.locust.io/en/latest/changelog.html).
 
-## [2.16.1](https://github.com/locustio/locust/tree/2.16.1) (2023-08-05)
+## [2.21.0](https://github.com/locustio/locust/tree/2.21.0) (2024-01-27)
+
+[Full Changelog](https://github.com/locustio/locust/compare/2.20.1...2.21.0)
+
+**Fixed bugs:**
+
+- 95th percentile line chart does not display correctly on the Response Times \(ms\) graph [\#2540](https://github.com/locustio/locust/issues/2540)
+- ValueError: greenlet.greenlet size changed, may indicate binary incompatibility. Expected 152 from C header, got 40 from PyObject [\#2539](https://github.com/locustio/locust/issues/2539)
+- TaskSet missing \_cp\_last\_run attribute [\#2532](https://github.com/locustio/locust/issues/2532)
+- Modern UI "forgets" the selected user count and ramp up rate when starting a new test or editing a running one [\#2531](https://github.com/locustio/locust/issues/2531)
+- Update dependency or remove support for Basic Auth for the Web UI [\#2517](https://github.com/locustio/locust/issues/2517)
+
+**Closed issues:**
+
+- Unifying percentile displays in Locust's statistics screens [\#2546](https://github.com/locustio/locust/issues/2546)
+- Improve the Class Picker [\#2545](https://github.com/locustio/locust/issues/2545)
+- Add `response.ok` support to `FastHttpUser`'s `FastResponse`, ala `HttpUser`/requests [\#2520](https://github.com/locustio/locust/issues/2520)
+
+**Merged pull requests:**
+
+- Optimize memory usage when using --processes [\#2564](https://github.com/locustio/locust/pull/2564) ([cyberw](https://github.com/cyberw))
+- docs: update developing-locust.rst \(black, flake8\) -\> ruff [\#2562](https://github.com/locustio/locust/pull/2562) ([tdadela](https://github.com/tdadela))
+- Allow User weight adjustment \(and task selection\) in UI when running with --class-picker, or on command line with --config-users argument [\#2559](https://github.com/locustio/locust/pull/2559) ([andrewbaldwin44](https://github.com/andrewbaldwin44))
+- Ruff enable isort \(with custom sections\) [\#2556](https://github.com/locustio/locust/pull/2556) ([tdadela](https://github.com/tdadela))
+- update readthedocs-sphinx-search [\#2553](https://github.com/locustio/locust/pull/2553) ([cyberw](https://github.com/cyberw))
+- Fix pedantic typo in the index.html template [\#2552](https://github.com/locustio/locust/pull/2552) ([marcelofern](https://github.com/marcelofern))
+- Ruff set python version and enable more rules [\#2551](https://github.com/locustio/locust/pull/2551) ([tdadela](https://github.com/tdadela))
+- Customization Feature for Percentile Display on Statistics Page [\#2550](https://github.com/locustio/locust/pull/2550) ([FooQoo](https://github.com/FooQoo))
+- Use ruff instead of flake8 and black for linting and formatting [\#2549](https://github.com/locustio/locust/pull/2549) ([cyberw](https://github.com/cyberw))
+- Fix mypy configuration & upgrade typing [\#2548](https://github.com/locustio/locust/pull/2548) ([tdadela](https://github.com/tdadela))
+- Fix Web UI Chart History [\#2544](https://github.com/locustio/locust/pull/2544) ([andrewbaldwin44](https://github.com/andrewbaldwin44))
+- Web UI Modern Auth [\#2538](https://github.com/locustio/locust/pull/2538) ([andrewbaldwin44](https://github.com/andrewbaldwin44))
+- Modern UI: Fix Default Values for Edit / Start New Test [\#2537](https://github.com/locustio/locust/pull/2537) ([andrewbaldwin44](https://github.com/andrewbaldwin44))
+- Added response.ok support to FastHttpUser's FastResponse class similar to HttpUser's Response [\#2535](https://github.com/locustio/locust/pull/2535) ([PankajKhanwani](https://github.com/PankajKhanwani))
+- Update shape class' runner when Web UI picker is used [\#2534](https://github.com/locustio/locust/pull/2534) ([wiatrak2](https://github.com/wiatrak2))
+- setting initial \_cp\_last\_run on TaskSet in order to allow constant\_pacing wait time strategy [\#2533](https://github.com/locustio/locust/pull/2533) ([ionutab](https://github.com/ionutab))
+
+## [2.20.1](https://github.com/locustio/locust/tree/2.20.1) (2024-01-03)
+
+[Full Changelog](https://github.com/locustio/locust/compare/2.20.0...2.20.1)
+
+**Fixed bugs:**
+
+- Vite-version needs to be updated [\#2528](https://github.com/locustio/locust/issues/2528)
+- Issue of 100% CPU usage when closing WebSocket connections. [\#2516](https://github.com/locustio/locust/issues/2516)
+
+**Merged pull requests:**
+
+- Update Vite to 4.5.1 [\#2530](https://github.com/locustio/locust/pull/2530) ([cyberw](https://github.com/cyberw))
+- Bump vite from 4.4.9 to 4.4.12 in /locust/webui [\#2527](https://github.com/locustio/locust/pull/2527) ([dependabot[bot]](https://github.com/apps/dependabot))
+- update docker actions to get rid of node12 deprecation warnings [\#2524](https://github.com/locustio/locust/pull/2524) ([mgor](https://github.com/mgor))
+- Support IPv6 for zmq connection between master and worker [\#2521](https://github.com/locustio/locust/pull/2521) ([simonwu-sn](https://github.com/simonwu-sn))
+- run\_single\_user improvements [\#2519](https://github.com/locustio/locust/pull/2519) ([cyberw](https://github.com/cyberw))
+- Bump Requests to 2.26.0, remove explicit dependency on charset\_normalizer [\#2518](https://github.com/locustio/locust/pull/2518) ([cyberw](https://github.com/cyberw))
+
+## [2.20.0](https://github.com/locustio/locust/tree/2.20.0) (2023-12-13)
+
+[Full Changelog](https://github.com/locustio/locust/compare/2.19.1...2.20.0)
+
+**Fixed bugs:**
+
+- har2locust KeyError: '\_resourceType' [\#2503](https://github.com/locustio/locust/issues/2503)
+- FastHTTPUser determines StatusCode 304 as Failed [\#2500](https://github.com/locustio/locust/issues/2500)
+- FastHttpUser is stricter than HttpUser about the host attribute [\#2492](https://github.com/locustio/locust/issues/2492)
+- Unable to modify custom parameters from UI using modern UI [\#2489](https://github.com/locustio/locust/issues/2489)
+- Exception 'LookupError: unknown encoding:' when response contains `content-type` not handled by requests.utils.get\_encoding\_from\_headers [\#2482](https://github.com/locustio/locust/issues/2482)
+
+**Merged pull requests:**
+
+- Fix useSwarmUi Test with Mock Timers [\#2514](https://github.com/locustio/locust/pull/2514) ([andrewbaldwin44](https://github.com/andrewbaldwin44))
+- Custom messages: Throw an exception if someone tries to register twice for the same event [\#2513](https://github.com/locustio/locust/pull/2513) ([cyberw](https://github.com/cyberw))
+- Fixed response failure for unsupported encoding [\#2512](https://github.com/locustio/locust/pull/2512) ([prince-melvin](https://github.com/prince-melvin))
+- Add event.measure context manager for simpler firing of request event [\#2511](https://github.com/locustio/locust/pull/2511) ([cyberw](https://github.com/cyberw))
+- Update Web UI About box [\#2510](https://github.com/locustio/locust/pull/2510) ([cyberw](https://github.com/cyberw))
+- Chart Average Response Time in Modern UI [\#2509](https://github.com/locustio/locust/pull/2509) ([andrewbaldwin44](https://github.com/andrewbaldwin44))
+- Update the About Section [\#2508](https://github.com/locustio/locust/pull/2508) ([andrewbaldwin44](https://github.com/andrewbaldwin44))
+- Allow Boolean and Null Values to be Set from the Web UI [\#2507](https://github.com/locustio/locust/pull/2507) ([andrewbaldwin44](https://github.com/andrewbaldwin44))
+- custom messages: Support sending datetimes and bson.ObjectId [\#2504](https://github.com/locustio/locust/pull/2504) ([cyberw](https://github.com/cyberw))
+- Add Notifications for Log Viewer [\#2502](https://github.com/locustio/locust/pull/2502) ([andrewbaldwin44](https://github.com/andrewbaldwin44))
+- FastHttpUser: Treat response code 304 as OK [\#2501](https://github.com/locustio/locust/pull/2501) ([cyberw](https://github.com/cyberw))
+- Fix Warnings from the Web UI Tests [\#2499](https://github.com/locustio/locust/pull/2499) ([andrewbaldwin44](https://github.com/andrewbaldwin44))
+- Adjust "Starting web interface at"-output [\#2498](https://github.com/locustio/locust/pull/2498) ([cyberw](https://github.com/cyberw))
+- Update mypy, some type hints, and some tiny updates to Runner classes [\#2497](https://github.com/locustio/locust/pull/2497) ([cyberw](https://github.com/cyberw))
+- Remove Typecheck from Web UI Build Process and Update Github Actions [\#2496](https://github.com/locustio/locust/pull/2496) ([andrewbaldwin44](https://github.com/andrewbaldwin44))
+- Replace Vitest canvas mock library [\#2495](https://github.com/locustio/locust/pull/2495) ([andrewbaldwin44](https://github.com/andrewbaldwin44))
+- Implement Modern Web UI Tests [\#2494](https://github.com/locustio/locust/pull/2494) ([andrewbaldwin44](https://github.com/andrewbaldwin44))
+- Further relax FastHttpUser's host checking to match HttpUser's [\#2493](https://github.com/locustio/locust/pull/2493) ([pjenvey](https://github.com/pjenvey))
+- Unable to modify custom parameters from the modern UI [\#2491](https://github.com/locustio/locust/pull/2491) ([andrewbaldwin44](https://github.com/andrewbaldwin44))
+
+## [2.19.1](https://github.com/locustio/locust/tree/2.19.1) (2023-11-27)
+
+[Full Changelog](https://github.com/locustio/locust/compare/2.19.0...2.19.1)
+
+**Closed issues:**
+
+- SocketIOUser not support send BINARY data [\#2457](https://github.com/locustio/locust/issues/2457)
+
+**Merged pull requests:**
+
+- Change logging of call to sys.exit\(\) to info level [\#2490](https://github.com/locustio/locust/pull/2490) ([cyberw](https://github.com/cyberw))
+- fix\(typing\): typing.DefaultDict in test\_interruptable\_task.py [\#2488](https://github.com/locustio/locust/pull/2488) ([tdadela](https://github.com/tdadela))
+- Dont suppress StopUser or GreenletExit in on\_stop [\#2486](https://github.com/locustio/locust/pull/2486) ([ALagierski](https://github.com/ALagierski))
+- FastResponse: Detect response text encoding when no information is present on the response headers. [\#2485](https://github.com/locustio/locust/pull/2485) ([MiltiadisKoutsokeras](https://github.com/MiltiadisKoutsokeras))
+- Fix an edge case when no directory is part of csv-prefix [\#2483](https://github.com/locustio/locust/pull/2483) ([sillydan1](https://github.com/sillydan1))
+- Create any directories as part of the CSV Prefix [\#2481](https://github.com/locustio/locust/pull/2481) ([sillydan1](https://github.com/sillydan1))
+
+## [2.19.0](https://github.com/locustio/locust/tree/2.19.0) (2023-11-21)
+
+[Full Changelog](https://github.com/locustio/locust/compare/2.18.4...2.19.0)
+
+**Merged pull requests:**
+
+- Fix issue with --processes: Stop parent process from trying to kill children too fast [\#2478](https://github.com/locustio/locust/pull/2478) ([cyberw](https://github.com/cyberw))
+- Update command line argument descriptions and docs [\#2477](https://github.com/locustio/locust/pull/2477) ([cyberw](https://github.com/cyberw))
+- Update minimum version of various dependencies [\#2476](https://github.com/locustio/locust/pull/2476) ([cyberw](https://github.com/cyberw))
+- Stop worker from automatically quitting if connected to an older version master that doesnt send heartbeats [\#2475](https://github.com/locustio/locust/pull/2475) ([cyberw](https://github.com/cyberw))
+- Shut down workers if master goes missing for too long [\#2474](https://github.com/locustio/locust/pull/2474) ([cyberw](https://github.com/cyberw))
+- Add --processes parameter to automatically fork worker processes [\#2472](https://github.com/locustio/locust/pull/2472) ([cyberw](https://github.com/cyberw))
+
+## [2.18.4](https://github.com/locustio/locust/tree/2.18.4) (2023-11-19)
+
+[Full Changelog](https://github.com/locustio/locust/compare/2.18.3...2.18.4)
+
+**Fixed bugs:**
+
+- Total RPS Charts | Failures line chart does not display current number of failures [\#2469](https://github.com/locustio/locust/issues/2469)
+- Modern UI: Lack of information about time and user count in charts [\#2467](https://github.com/locustio/locust/issues/2467)
+- Modern UI: Wrong chart's legend for overridden percentiles values  [\#2463](https://github.com/locustio/locust/issues/2463)
+- Modern UI: Can't sort columns on statistics page and downloaded report [\#2449](https://github.com/locustio/locust/issues/2449)
+- Incorrect RPS when decreasing the number of users [\#2399](https://github.com/locustio/locust/issues/2399)
+
+**Closed issues:**
+
+- Improve UI of Sorting Columns [\#2466](https://github.com/locustio/locust/issues/2466)
+
+**Merged pull requests:**
+
+- Log deprecation warning in python 3.8 [\#2473](https://github.com/locustio/locust/pull/2473) ([cyberw](https://github.com/cyberw))
+- Modern UI - Failures line chart does not display current number of failures [\#2471](https://github.com/locustio/locust/pull/2471) ([andrewbaldwin44](https://github.com/andrewbaldwin44))
+- Tiny optimization of StatsEntry.\_log\_response\_time [\#2470](https://github.com/locustio/locust/pull/2470) ([lailongwei](https://github.com/lailongwei))
+- Modern UI: Add Time to Chart Tooltips [\#2468](https://github.com/locustio/locust/pull/2468) ([andrewbaldwin44](https://github.com/andrewbaldwin44))
+- Ensure to wait a second before next `tick()` [\#2465](https://github.com/locustio/locust/pull/2465) ([wiatrak2](https://github.com/wiatrak2))
+- Modern UI: Wrong chart's legend for Response Times [\#2464](https://github.com/locustio/locust/pull/2464) ([andrewbaldwin44](https://github.com/andrewbaldwin44))
+- Replace Updating Stats useEffect Hook with useInterval [\#2462](https://github.com/locustio/locust/pull/2462) ([andrewbaldwin44](https://github.com/andrewbaldwin44))
+
+## [2.18.3](https://github.com/locustio/locust/tree/2.18.3) (2023-11-12)
+
+[Full Changelog](https://github.com/locustio/locust/compare/2.18.2...2.18.3)
+
+**Closed issues:**
+
+- Add Modern UI HTML Report to --html Option [\#2458](https://github.com/locustio/locust/issues/2458)
+
+**Merged pull requests:**
+
+- List Andrew as maintainer of the Modern web UI [\#2460](https://github.com/locustio/locust/pull/2460) ([cyberw](https://github.com/cyberw))
+- Add Modern UI HTML Report to --html Option [\#2459](https://github.com/locustio/locust/pull/2459) ([andrewbaldwin44](https://github.com/andrewbaldwin44))
+- Modern UI: Add sorting to columns on statistics page and downloaded report [\#2453](https://github.com/locustio/locust/pull/2453) ([andrewbaldwin44](https://github.com/andrewbaldwin44))
+
+## [2.18.2](https://github.com/locustio/locust/tree/2.18.2) (2023-11-10)
+
+[Full Changelog](https://github.com/locustio/locust/compare/2.18.1...2.18.2)
+
+**Fixed bugs:**
+
+- 2.18 - fasthttp error for no content response [\#2450](https://github.com/locustio/locust/issues/2450)
+- Segmentation fault running the locust command [\#2447](https://github.com/locustio/locust/issues/2447)
+
+**Merged pull requests:**
+
+- Add terraform variables [\#2455](https://github.com/locustio/locust/pull/2455) ([sdarwin](https://github.com/sdarwin))
+- FastHttpUser: encoding return str when response is empty [\#2451](https://github.com/locustio/locust/pull/2451) ([scottARob](https://github.com/scottARob))
+- Fix docs: modern UI developing guide [\#2446](https://github.com/locustio/locust/pull/2446) ([zifter](https://github.com/zifter))
+
+## [2.18.1](https://github.com/locustio/locust/tree/2.18.1) (2023-11-01)
+
+[Full Changelog](https://github.com/locustio/locust/compare/2.18.0...2.18.1)
+
+**Fixed bugs:**
+
+- Modern UI shows wrong \(old\) hostname when setting hostname in start dialog [\#2435](https://github.com/locustio/locust/issues/2435)
+- Unable to load multiple custom shape classes in web UI from --class-picker [\#2412](https://github.com/locustio/locust/issues/2412)
+
+**Closed issues:**
+
+- Add Log Viewer to Modern UI [\#2437](https://github.com/locustio/locust/issues/2437)
+
+**Merged pull requests:**
+
+- Log unhandled exceptions thrown in User.on\_start [\#2442](https://github.com/locustio/locust/pull/2442) ([cyberw](https://github.com/cyberw))
+- Fix for UserClass picker not loading all available Shape Classes [\#2441](https://github.com/locustio/locust/pull/2441) ([mikenester](https://github.com/mikenester))
+- Add Log Viewer to Modern UI [\#2440](https://github.com/locustio/locust/pull/2440) ([andrewbaldwin44](https://github.com/andrewbaldwin44))
+- Modern UI shows wrong \(old\) hostname when setting hostname in start dialog [\#2436](https://github.com/locustio/locust/pull/2436) ([andrewbaldwin44](https://github.com/andrewbaldwin44))
+
+## [2.18.0](https://github.com/locustio/locust/tree/2.18.0) (2023-10-26)
+
+[Full Changelog](https://github.com/locustio/locust/compare/2.17.0...2.18.0)
+
+**Fixed bugs:**
+
+- Pacing and RPS trouble [\#2427](https://github.com/locustio/locust/issues/2427)
+- Content-Type with version information is not properly parsed [\#2415](https://github.com/locustio/locust/issues/2415)
+
+**Closed issues:**
+
+- Modernize the report.html when using the --modern-ui Flag [\#2419](https://github.com/locustio/locust/issues/2419)
+- Proposal for Re-Writing the Web UI [\#2396](https://github.com/locustio/locust/issues/2396)
+
+**Merged pull requests:**
+
+- Revert support for argcomplete [\#2434](https://github.com/locustio/locust/pull/2434) ([cyberw](https://github.com/cyberw))
+- refactor\(MasterRunner\): simplify condition in check\_stopped [\#2432](https://github.com/locustio/locust/pull/2432) ([tdadela](https://github.com/tdadela))
+- Fix too long first wait time for constant\_pacing \(and constant\_throughput\) [\#2428](https://github.com/locustio/locust/pull/2428) ([cyberw](https://github.com/cyberw))
+- Support argcomplete as an optional dependency [\#2423](https://github.com/locustio/locust/pull/2423) ([singingwolfboy](https://github.com/singingwolfboy))
+- Stop supporting Python 3.7 [\#2421](https://github.com/locustio/locust/pull/2421) ([cyberw](https://github.com/cyberw))
+- \[Feature/2419\] Modernize the report.html when using the --modern-ui Flag [\#2420](https://github.com/locustio/locust/pull/2420) ([andrewbaldwin44](https://github.com/andrewbaldwin44))
+- Add run\_single\_user to \_\_all\_\_ variable [\#2417](https://github.com/locustio/locust/pull/2417) ([tdadela](https://github.com/tdadela))
+- Make FastHttpUser use requests encoding detection [\#2416](https://github.com/locustio/locust/pull/2416) ([cyberw](https://github.com/cyberw))
+- Add a modern web UI based on React, MaterialUI and Vite [\#2405](https://github.com/locustio/locust/pull/2405) ([andrewbaldwin44](https://github.com/andrewbaldwin44))
+
+## [2.17.0](https://github.com/locustio/locust/tree/2.17.0) (2023-10-05)
+
+[Full Changelog](https://github.com/locustio/locust/compare/2.16.1...2.17.0)
+
+**Fixed bugs:**
+
+- Cannot stop locust in case of exceptions in on\_stop\(\) [\#2401](https://github.com/locustio/locust/issues/2401)
+
+**Closed issues:**
+
+- Dropdown menu in web UI for custom arguments [\#2371](https://github.com/locustio/locust/issues/2371)
+
+**Merged pull requests:**
+
+- Test and explicitly support Python 3.12 [\#2411](https://github.com/locustio/locust/pull/2411) ([cyberw](https://github.com/cyberw))
+- Improve performance for statistics handling [\#2410](https://github.com/locustio/locust/pull/2410) ([cyberw](https://github.com/cyberw))
+- Log a deprecation warning in Python 3.7 [\#2403](https://github.com/locustio/locust/pull/2403) ([cyberw](https://github.com/cyberw))
+- Catch exceptions in on\_stop [\#2402](https://github.com/locustio/locust/pull/2402) ([cyberw](https://github.com/cyberw))
+- Allow LoadTestShapes to reuse run-time, spawn-rate and users parameters [\#2395](https://github.com/locustio/locust/pull/2395) ([noirbizarre](https://github.com/noirbizarre))
+- Support user abstract load shape base classes [\#2393](https://github.com/locustio/locust/pull/2393) ([noirbizarre](https://github.com/noirbizarre))
+- chore: bump dockerfile to 3.11-slim base image [\#2388](https://github.com/locustio/locust/pull/2388) ([vejmoj1](https://github.com/vejmoj1))
+- Respect hard limit when setting open file limit \(NOFILE\) [\#2386](https://github.com/locustio/locust/pull/2386) ([benofbrown](https://github.com/benofbrown))
+
+## [2.16.1](https://github.com/locustio/locust/tree/2.16.1) (2023-08-07)
 
 [Full Changelog](https://github.com/locustio/locust/compare/2.16.0...2.16.1)
 

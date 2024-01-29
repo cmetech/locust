@@ -1,16 +1,17 @@
-from unittest import mock
+from locust import log
+from locust.log import greenlet_exception_logger
+
 import socket
 import subprocess
 import textwrap
 from logging import getLogger
+from unittest import mock
 
 import gevent
 
-from locust import log
-from locust.log import greenlet_exception_logger
+from . import changed_rlimit
 from .testcases import LocustTestCase
 from .util import temporary_file
-from . import changed_rlimit
 
 
 class TestGreenletExceptionLogger(LocustTestCase):
@@ -204,3 +205,33 @@ class TestLoggingOptions(LocustTestCase):
             f"{socket.gethostname()}/INFO/root: custom log message",
             log_content,
         )
+
+    def test_user_broken_on_start(self):
+        with temporary_file(
+            textwrap.dedent(
+                """
+            from locust import HttpUser, task
+
+            class TestUser(HttpUser):
+                host = "invalidhost"
+
+                def on_start(self):
+                    self.client.get("/")
+                """
+            )
+        ) as file_path:
+            output = subprocess.check_output(
+                [
+                    "locust",
+                    "-f",
+                    file_path,
+                    "-t",
+                    "1",
+                    "--headless",
+                ],
+                stderr=subprocess.STDOUT,
+                timeout=10,
+                text=True,
+            )
+
+        self.assertIn("ERROR/locust.user.users: Invalid URL", output)

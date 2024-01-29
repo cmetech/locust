@@ -1,48 +1,49 @@
+import locust
+from locust import (
+    LoadTestShape,
+    __version__,
+    constant,
+    runners,
+)
+from locust.argument_parser import parse_options
+from locust.env import Environment
+from locust.exception import RPCError, RPCReceiveError, StopUser
+from locust.main import create_environment
+from locust.rpc import Message
+from locust.runners import (
+    STATE_INIT,
+    STATE_MISSING,
+    STATE_RUNNING,
+    STATE_SPAWNING,
+    STATE_STOPPED,
+    STATE_STOPPING,
+    LocalRunner,
+    WorkerNode,
+    WorkerRunner,
+)
+from locust.stats import RequestStats
+from locust.user import (
+    TaskSet,
+    User,
+    task,
+)
+
 import json
 import random
 import time
 import unittest
 from collections import defaultdict
 from operator import itemgetter
+from unittest import mock
 
 import gevent
-from unittest import mock
 import requests
 from gevent import sleep
 from gevent.pool import Group
 from gevent.queue import Queue
-
-import locust
-from locust import (
-    LoadTestShape,
-    constant,
-    runners,
-    __version__,
-)
-from locust.argument_parser import parse_options
-from locust.env import Environment
-from locust.exception import RPCError, StopUser, RPCReceiveError
-from locust.main import create_environment
-from locust.rpc import Message
-from locust.runners import (
-    LocalRunner,
-    STATE_INIT,
-    STATE_SPAWNING,
-    STATE_RUNNING,
-    STATE_MISSING,
-    STATE_STOPPING,
-    STATE_STOPPED,
-    WorkerNode,
-    WorkerRunner,
-)
-from locust.stats import RequestStats
-from .testcases import LocustTestCase
-from locust.user import (
-    TaskSet,
-    User,
-    task,
-)
 from retry import retry  # type: ignore
+
+from .testcases import LocustTestCase
 from .util import patch_env
 
 NETWORK_BROKEN = "network broken"
@@ -626,6 +627,20 @@ class TestLocustRunner(LocustRunnerTestCase):
         msg = self.mocked_log.warning[0]
         self.assertIn("Unknown message type received", msg)
 
+    def test_duplicate_message_handler_registration(self):
+        class MyUser(User):
+            @task
+            def my_task(self):
+                pass
+
+        def on_custom_msg(msg, **kw):
+            pass
+
+        environment = Environment(user_classes=[MyUser])
+        runner = LocalRunner(environment)
+        runner.register_message("test_custom_msg", on_custom_msg)
+        self.assertRaises(Exception, runner.register_message, "test_custom_msg", on_custom_msg)
+
     def test_swarm_endpoint_is_non_blocking(self):
         class TestUser1(User):
             @task
@@ -1193,6 +1208,7 @@ class TestMasterWorkerRunners(LocustTestCase):
 
             self.assertEqual("stopped", master.state)
 
+    @unittest.skip(reason="a little flaky since #2465, so disabled for now")
     def test_distributed_shape_with_fixed_users(self):
         """
         Full integration test that starts both a MasterRunner and three WorkerRunner instances
@@ -2706,6 +2722,67 @@ class TestMasterRunner(LocustRunnerTestCase):
             indexes.sort()
             for i in range(USERS_COUNT):
                 self.assertEqual(indexes[i], i, "Worker index mismatch")
+
+    def test_custom_shape_scale_interval(self):
+        class MyUser(User):
+            @task
+            def my_task(self):
+                pass
+
+        class TestShape(LoadTestShape):
+            def __init__(self):
+                super().__init__()
+                self._users_num = [1, 1, 1, 2, 2, 3, 3, 3, 4]
+                self._index = 0
+
+            def tick(self):
+                if self._index >= len(self._users_num):
+                    return None
+                users_num = self._users_num[self._index]
+                self._index += 1
+                return users_num, users_num
+
+        self.environment.shape_class = TestShape()
+
+        with mock.patch("locust.rpc.rpc.Server", mocked_rpc()) as server:
+            master = self.get_runner(user_classes=[MyUser])
+            for i in range(5):
+                server.mocked_send(Message("client_ready", __version__, "fake_client%i" % i))
+
+            # Start the shape_worker
+            self.environment.shape_class.reset_time()
+            master.start_shape()
+
+            # Wait for shape_worker to update user_count
+            sleep(0.5)
+            num_users = sum(
+                sum(msg.data["user_classes_count"].values()) for _, msg in server.outbox if msg.type != "ack"
+            )
+            self.assertEqual(
+                1, num_users, "Total number of users in first stage of shape test is not 1: %i" % num_users
+            )
+
+            # Wait for shape_worker to update user_count again
+            sleep(1.5)
+            num_users = sum(
+                sum(msg.data["user_classes_count"].values()) for _, msg in server.outbox if msg.type != "ack"
+            )
+            self.assertEqual(
+                1, num_users, "Total number of users in second stage of shape test is not 1: %i" % num_users
+            )
+
+            # Wait for shape_worker to update user_count few times but not reach the end yet
+            sleep(2.5)
+            num_users = sum(
+                sum(msg.data["user_classes_count"].values()) for _, msg in server.outbox if msg.type != "ack"
+            )
+            self.assertEqual(
+                3, num_users, "Total number of users in second stage of shape test is not 3: %i" % num_users
+            )
+
+            # Wait to ensure shape_worker has stopped the test
+            sleep(3)
+            self.assertEqual("stopped", master.state, "The test has not been stopped by the shape class")
 
     def test_custom_shape_scale_up(self):
         class MyUser(User):

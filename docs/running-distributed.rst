@@ -4,77 +4,87 @@
 Distributed load generation
 ===========================
 
-A single process running Locust can simulate a reasonably high throughput. For a simple test plan it should be able to make many hundreds of requests per second, thousands if you use :ref:`FastHttpUser <increase-performance>`.
+A single process running Locust can simulate a reasonably high throughput. For a simple test plan and small payloads it can make more than a thousand requests per second, possibly over ten thousand if you use :ref:`FastHttpUser <increase-performance>`.
 
-But if your test plan is complex or you want to run even more load, you'll need to scale out to multiple processes, maybe even multiple machines.
+But if your test plan is complex or you want to run even more load, you'll need to scale out to multiple processes, maybe even multiple machines. Fortunately, Locust supports distributed runs out of the box.
 
-To do this, you start one instance of Locust in master mode using the ``--master`` flag and multiple worker instances using the ``--worker`` flag. If the workers are not on the same machine as the master you use ``--master-host`` to point them to the IP/hostname of the machine running the master.
+To do this, you start one instance of Locust with the ``--master`` flag and one or more using the ``--worker`` flag. The master instance runs Locust's web interface, and tells the workers when to spawn/stop Users. The worker instances run your Users and send statistics back to the master. The master instance doesn't run any Users itself.
 
-The master instance runs Locust's web interface, and tells the workers when to spawn/stop Users. The workers run your Users and send back statistics to the master. The master instance doesn't run any Users itself.
-
-Both the master and worker machines must have a copy of the locustfile when running Locust distributed.
+To simplify startup, you can use the ``--processes`` flag. It will launch a master process and the specified number of worker processes. It can also be used in combination with ``--worker``, then it will only launch workers. This feature relies on `fork() <https://linux.die.net/man/3/fork>`_ so it doesn't work on Windows.
 
 .. note::
-    Because Python cannot fully utilize more than one core per process (see `GIL <https://realpython.com/python-gil/>`_), you should typically run **one worker instance per processor core** on the worker machines in order to utilize all their computing power.
+    Because Python cannot fully utilize more than one core per process (see `GIL <https://realpython.com/python-gil/>`_), you need to run one worker instance per processor core in order to have access to all your computing power.
 
 .. note::
-    There is almost no limit to how many *Users* you can run per worker. Locust/gevent can run thousands or even tens of thousands of Users per process just fine, as long as their total request rate/RPS is not too high.
+    There is almost no limit to how many Users you can run per worker. Locust/gevent can run thousands or even tens of thousands of Users per process just fine, as long as their total request rate (RPS) is not too high.
 
-.. note::
-    If Locust is getting close to running out of CPU resources, it will log a warning.
+    If Locust *is* getting close to running out of CPU resources, it will log a warning. If there is no warning but you are still unable to generate the expected load, then the problem must be `something else <https://github.com/locustio/locust/wiki/FAQ#increase-my-request-raterps>`_.
 
-Example
-=======
+Single machine
+==============
 
-To start locust in master mode::
+It is really simple to launch a master and 4 worker processes::
+
+    locust --processes 4
+
+You can even auto-detect the number of cores in your machine and launch one worker for each of them::
+
+    locust --processes -1
+
+Multiple machines
+=================
+
+Start locust in master mode on one machine::
 
     locust -f my_locustfile.py --master
 
-And then on each worker (replace ``192.168.0.14`` with the IP of the master machine, or leave out the parameter altogether if your workers are on the same machine as the master)::
+And then on each worker machine (make sure they also have a copy of the locustfile):
 
-    locust -f my_locustfile.py --worker --master-host=192.168.0.14
+.. code-block:: bash
 
+    locust -f my_locustfile.py --worker --master-host <your master's address> --processes 4
 
-Options
-=======
+Multiple machines, using locust-swarm
+=====================================
 
-``--master``
-------------
+Both worker and master need access to the locustfile, and when you make changes to it you'll need to restart all Locust processes. `locust-swarm <https://github.com/SvenskaSpel/locust-swarm>`_ automates this for you. It also solves the issue of firewall/network access from workers to master using SSH tunnels (this is often a problem if the master is running on your workstation and workers are running in some datacenter).
 
-Sets locust in master mode. The web interface will run on this node.
+.. code-block:: bash
 
+    pip install locust-swarm
 
-``--worker``
-------------
+    swarm -f my_locustfile.py --loadgen-list worker-server1,worker-server2 <any other regular locust parameters>
 
-Sets locust in worker mode.
+See `locust-swarm <https://github.com/SvenskaSpel/locust-swarm>`_ for more details.
 
+Options for distributed load generation
+=======================================
 
-``--master-host=X.X.X.X``
--------------------------
+``--master-host <hostname or ip>``
+----------------------------------
 
 Optionally used together with ``--worker`` to set the hostname/IP of the master node (defaults
-to 127.0.0.1)
+to localhost)
 
-``--master-port=5557``
-----------------------
+``--master-port <port number>``
+-------------------------------
 
 Optionally used together with ``--worker`` to set the port number of the master node (defaults to 5557).
 
-``--master-bind-host=X.X.X.X``
-------------------------------
+``--master-bind-host <ip>``
+---------------------------
 
 Optionally used together with ``--master``. Determines which network interface the master node
 will bind to. Defaults to * (all available interfaces).
 
-``--master-bind-port=5557``
-------------------------------
+``--master-bind-port <port number>``
+------------------------------------
 
 Optionally used together with ``--master``. Determines what network ports that the master node will
 listen to. Defaults to 5557.
 
-``--expect-workers=X``
-----------------------
+``--expect-workers <number of workers>``
+----------------------------------------
 
 Used when starting the master node with ``--headless``. The master node will then wait until X worker
 nodes has connected before the test is started.
@@ -83,7 +93,7 @@ Communicating across nodes
 =============================================
 
 When running Locust in distributed mode, you may want to communicate between master and worker nodes in 
-order to coordinate data. This can be easily accomplished with custom messages using the built in messaging hooks:
+order to coordinate the test. This can be easily accomplished with custom messages using the built in messaging hooks:
 
 .. code-block:: python
 

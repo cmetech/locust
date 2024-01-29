@@ -1,4 +1,7 @@
 from __future__ import annotations
+
+from locust.exception import InterruptTaskSet, MissingWaitTimeError, RescheduleTask, RescheduleTaskImmediately, StopUser
+
 import logging
 import random
 import traceback
@@ -6,25 +9,16 @@ from time import time
 from typing import (
     TYPE_CHECKING,
     Callable,
-    List,
-    TypeVar,
-    Optional,
+    Protocol,
     Type,
+    TypeVar,
+    final,
     overload,
-    Dict,
-    Set,
+    runtime_checkable,
 )
-
-# @TODO: typing.Protocol and typing.final is in python >= 3.8
-try:
-    from typing import Protocol, final, runtime_checkable
-except ImportError:
-    from typing_extensions import Protocol, final, runtime_checkable  # type: ignore
 
 import gevent
 from gevent import GreenletExit
-
-from locust.exception import InterruptTaskSet, RescheduleTask, RescheduleTaskImmediately, StopUser, MissingWaitTimeError
 
 if TYPE_CHECKING:
     from locust import User
@@ -38,7 +32,7 @@ LOCUST_STATE_RUNNING, LOCUST_STATE_WAITING, LOCUST_STATE_STOPPING = ["running", 
 
 @runtime_checkable
 class TaskHolder(Protocol[TaskT]):
-    tasks: List[TaskT]
+    tasks: list[TaskT]
 
 
 @overload
@@ -92,7 +86,7 @@ def task(weight: TaskT | int = 1) -> TaskT | Callable[[TaskT], TaskT]:
     Check if task was used without parentheses (not called), like this::
 
         @task
-        def my_task()
+        def my_task(self)
             pass
     """
     if callable(weight):
@@ -174,10 +168,10 @@ def get_tasks_from_base_classes(bases, class_dict):
 
 
 def filter_tasks_by_tags(
-    task_holder: Type[TaskHolder],
-    tags: Optional[Set[str]] = None,
-    exclude_tags: Optional[Set[str]] = None,
-    checked: Optional[Dict[TaskT, bool]] = None,
+    task_holder: type[TaskHolder],
+    tags: set[str] | None = None,
+    exclude_tags: set[str] | None = None,
+    checked: dict[TaskT, bool] | None = None,
 ):
     """
     Function used by Environment to recursively remove any tasks/TaskSets from a TaskSet/User that
@@ -242,7 +236,7 @@ class TaskSet(metaclass=TaskSetMeta):
     will then continue in the first TaskSet).
     """
 
-    tasks: List[TaskSet | Callable] = []
+    tasks: list[TaskSet | Callable] = []
     """
     Collection of python callables and/or TaskSet classes that the User(s) will run.
 
@@ -257,7 +251,7 @@ class TaskSet(metaclass=TaskSetMeta):
             tasks = {ThreadPage:15, write_post:1}
     """
 
-    min_wait: Optional[float] = None
+    min_wait: float | None = None
     """
     Deprecated: Use wait_time instead.
     Minimum waiting time between the execution of user tasks. Can be used to override
@@ -265,7 +259,7 @@ class TaskSet(metaclass=TaskSetMeta):
     TaskSet.
     """
 
-    max_wait: Optional[float] = None
+    max_wait: float | None = None
     """
     Deprecated: Use wait_time instead.
     Maximum waiting time between the execution of user tasks. Can be used to override
@@ -281,11 +275,11 @@ class TaskSet(metaclass=TaskSetMeta):
     if not set on the TaskSet.
     """
 
-    _user: "User"
-    _parent: "User"
+    _user: User
+    _parent: User
 
-    def __init__(self, parent: "User") -> None:
-        self._task_queue: List[Callable] = []
+    def __init__(self, parent: User) -> None:
+        self._task_queue: list[Callable] = []
         self._time_start = time()
 
         if isinstance(parent, TaskSet):
@@ -302,9 +296,10 @@ class TaskSet(metaclass=TaskSetMeta):
             self.max_wait = self.user.max_wait
         if not self.wait_function:
             self.wait_function = self.user.wait_function
+        self._cp_last_run = time()  # used by constant_pacing wait_time
 
     @property
-    def user(self) -> "User":
+    def user(self) -> User:
         """:py:class:`User <locust.User>` instance that this TaskSet was created by"""
         return self._user
 
@@ -352,13 +347,21 @@ class TaskSet(metaclass=TaskSetMeta):
                 else:
                     self.wait()
             except InterruptTaskSet as e:
-                self.on_stop()
+                try:
+                    self.on_stop()
+                except (StopUser, GreenletExit):
+                    raise
+                except Exception:
+                    logging.error("Uncaught exception in on_stop: \n%s", traceback.format_exc())
                 if e.reschedule:
                     raise RescheduleTaskImmediately(e.reschedule) from e
                 else:
                     raise RescheduleTask(e.reschedule) from e
             except (StopUser, GreenletExit):
-                self.on_stop()
+                try:
+                    self.on_stop()
+                except Exception:
+                    logging.error("Uncaught exception in on_stop: \n%s", traceback.format_exc())
                 raise
             except Exception as e:
                 self.user.environment.events.user_error.fire(user_instance=self, exception=e, tb=e.__traceback__)
@@ -422,11 +425,7 @@ class TaskSet(metaclass=TaskSetMeta):
             return random.randint(self.min_wait, self.max_wait) / 1000.0
         else:
             raise MissingWaitTimeError(
-                "You must define a wait_time method on either the %s or %s class"
-                % (
-                    type(self.user).__name__,
-                    type(self).__name__,
-                )
+                "You must define a wait_time method on either the {type(self.user).__name__} or {type(self).__name__} class"
             )
 
     def wait(self):
